@@ -22,7 +22,7 @@ namespace CachingServer
         public dataNode GetKey(string key)
         {
             if (!ContainsKey(key))
-                return new dataNode("", "", 0); // missing
+                throw new("MISSING");
 
             var node = dic[key];
             updateUsed(node);
