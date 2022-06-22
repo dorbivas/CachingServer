@@ -14,7 +14,7 @@
         private readonly IPAddress m_IpAddress;
         private readonly Int32 r_Port;
         private readonly object block = new object();
-        private const int r_MaxStorage = 128 * (1024 * 1024); // 128MB
+        private const int r_MaxStorage = 128 * (1024 * 1024); 
         private LruCache m_DataCache = new LruCache(r_MaxStorage);
 
         public Server(int i_Port = 10011, string i_IpAddress = "127.0.0.1")
@@ -51,15 +51,7 @@
         {
             lock (block)
             {
-                Console.Out.Flush();
-                Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId} LOCKED ");
-                Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId}: set: ");
                 m_DataCache.Add(data.Key, data);
-                Console.WriteLine("cache: " + m_DataCache.ToString());
-                Console.WriteLine("data: " + data.ToString());
-                Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId} UNLOCKED ");
-
-                //m_DataCache.Add(data.Key, data);
             }
         }
 
