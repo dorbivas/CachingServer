@@ -151,7 +151,7 @@
                     if (commandType.CompareTo("get") == 0)
                     {
                         data = GetCacheKey(data.Key);
-                        sw.WriteLine($"OK {data.Key}{Environment.NewLine}{data.Data}");
+                        sw.WriteLine($"OK {data.Size}{Environment.NewLine}{data.Data}");
                     }
                     else if (commandType.CompareTo("set") == 0)
                     {
