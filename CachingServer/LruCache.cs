@@ -1,77 +1,80 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
+﻿/// <summary>
+/// fully associative cache implimented with LRU system.  
+/// </summary>
 namespace CachingServer
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+
     public class LruCache
     {
         private int size = 0;
         private int capacity = 0;
-        private LinkedList<dataNode> lst = new LinkedList<dataNode>();
-        private Dictionary<string, LinkedListNode<dataNode>> dic = new Dictionary<string, LinkedListNode<dataNode>>();
+        private LinkedList<DataNode> list = new LinkedList<DataNode>();
+        private Dictionary<string, LinkedListNode<DataNode>> cache = new Dictionary<string, LinkedListNode<DataNode>>();
 
         public LruCache(int capacity)
         {
             this.capacity = capacity;
         }
 
-        public bool ContainsKey(string key) => dic.ContainsKey(key);
+        public bool ContainsKey(string key) => cache.ContainsKey(key);
 
-        public dataNode GetKey(string key)
+        public DataNode GetKey(string key)
         {
             if (!ContainsKey(key))
                 throw new("MISSING");
 
-            var node = dic[key];
-            updateUsed(node);
+            var node = cache[key];
+            updateLastUsed(node);
             return node.Value;
         }
 
-        public void Add(string key, dataNode data)
+        public void Add(string key, DataNode data)
         {
             int addedSize;
             if (ContainsKey(key))
-                addedSize = data.Size - dic.GetValueOrDefault(key).Value.Size;
+                addedSize = data.Size - cache.GetValueOrDefault(key).Value.Size;
             else
                 addedSize = data.Size;
             
             while (size + addedSize > capacity)
             {
-                dataNode last = lst.Last();
+                DataNode last = list.Last();
                 Remove(last.Key);
             }
 
-            if (dic.ContainsKey(key))
+            if (cache.ContainsKey(key))
             {
-                lst.Remove(dic[key]);
+                list.Remove(cache[key]);
             }
 
-            lst.AddFirst(data);
-            dic[key] = lst.First;
+            list.AddFirst(data);
+            cache[key] = list.First;
             size += data.Size;
         }
 
         public void Remove(string key)
         {
-            var node = dic[key];
-            dic.Remove(key);
-            lst.Remove(node);
+            var node = cache[key];
+            cache.Remove(key);
+            list.Remove(node);
             size -= node.Value.Size;
         }
 
-        public dataNode this[string key]
+        public DataNode this[string key]
         {
             get => GetKey(key);
             set => Add(key, value);
         }
 
-        public override string ToString() // todo
+        public override string ToString()
         {
             StringBuilder s = new StringBuilder();
 
-            foreach (var key in dic.Keys)
+            foreach (var key in cache.Keys)
             {
                 s.Append(key + " ");
             }
@@ -79,10 +82,10 @@ namespace CachingServer
             return s.ToString();
         }
 
-        private void updateUsed(LinkedListNode<dataNode> node)
+        private void updateLastUsed(LinkedListNode<DataNode> node)
         {
-            lst.Remove(node);
-            lst.AddFirst(node);
+            list.Remove(node);
+            list.AddFirst(node);
         }
     }
 }

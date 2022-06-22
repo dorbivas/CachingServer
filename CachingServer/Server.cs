@@ -14,7 +14,7 @@
         private readonly IPAddress m_IpAddress;
         private readonly Int32 r_Port;
         private readonly object block = new object();
-        private const int r_MaxStorage = 60;//* (1024 * 1024); // 128MB
+        private const int r_MaxStorage = 128 * (1024 * 1024); // 128MB
         private LruCache m_DataCache = new LruCache(r_MaxStorage);
 
         public Server(int i_Port = 10011, string i_IpAddress = "127.0.0.1")
@@ -24,69 +24,66 @@
             r_Port = i_Port;
             m_IpAddress = ipAddress;
         }
-
-        public dataNode GetCacheKey(string i_Key)
+        /// <summary>
+        /// for testing allow to see the synchronization
+        /// Console.Out.Flush();
+        /// Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId} LOCKED ");
+        /// Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId}: get: ");
+        /// Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId} UNLOCKED ");
+        public DataNode GetCacheKey(string i_Key)
         {
             lock (block)
             {
-                Console.Out.Flush();
-
-                Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId} LOCKED ");
-
-                Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId}: get: ");
-
-                Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId} UNLOCKED ");
-
                 return m_DataCache.GetKey(i_Key);
-
             }
         }
 
-        public void SetCacheKey(dataNode data)
+        /// <summary>
+        /// this test doco allow you to see the cache state at current time.
+        /// Console.Out.Flush();
+        /// Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId} LOCKED ");   
+        /// Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId}: set: ");
+        /// m_DataCache.Add(data.Key, data);
+        /// Console.WriteLine("cache: " + m_DataCache.ToString()); 
+        /// Console.WriteLine("data: " + data.ToString());  
+        /// Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId} UNLOCKED "); 
+        public void SetCacheKey(DataNode data)
         {
             lock (block)
             {
                 Console.Out.Flush();
-
                 Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId} LOCKED ");
-
                 Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId}: set: ");
                 m_DataCache.Add(data.Key, data);
                 Console.WriteLine("cache: " + m_DataCache.ToString());
                 Console.WriteLine("data: " + data.ToString());
-
                 Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId} UNLOCKED ");
 
-                Console.Out.Flush();
+                //m_DataCache.Add(data.Key, data);
             }
         }
 
         private static bool validateSize(int i_Size, string i_Data)
         {
             int sizeInBytes = UTF8Encoding.UTF8.GetByteCount(i_Data);
+
             if (i_Size != sizeInBytes)
             {
                 throw new FormatException("non matching size to actual data");
             }
+
             return true;
         }
 
-        private static dataNode parseData(string i_Data, out string i_CommandType)
+        private static DataNode parseData(string i_Data, out string i_CommandType)
         {
-            StringBuilder data = new StringBuilder();
-            dataNode dataParsed = new dataNode();
-            string[] words = i_Data.Split(' '); // get key data \\ set key size data
+            int size;
+            DataNode dataParsed = new DataNode();
 
+            string[] words = i_Data.Split(' ');
             i_CommandType = words[0];
             dataParsed.Key = words[1];
-            for (int i = 3; i < words.Length; i++)
-            {
-                if (i == words.Length - 1)
-                    data.Append($"{words[i]}");
-                else
-                    data.Append($"{words[i]} ");
-            }
-            dataParsed.Data = data.ToString();
+            dataParsed.Data = getData(words);
 
             switch (i_CommandType)
             {
@@ -98,10 +95,17 @@
                     break;
                 case "set":
                     {
-                        dataParsed = handleSet(words);
+                        bool isNumeric = int.TryParse(words[2], out size);
+
+                        if (isNumeric)
+                            dataParsed.Size = size;
+                        else
+                            throw new("Invalid size");
+
+                        if (!validateSize(dataParsed.Size, dataParsed.Data))
+                            throw new("Invalid set command");
                     }
                     break;
-
                 default:
                     throw new("Invalid command");
             }
@@ -109,20 +113,19 @@
             return dataParsed;
         }
 
-        private static dataNode handleSet(string[] words)
+        private static string getData(string[] words)
         {
-            int size;
-            bool isNumeric = int.TryParse(words[2], out size);
-            dataNode dataParsed = new dataNode();
+            StringBuilder data = new StringBuilder();
 
-            if (isNumeric)
-                dataParsed.Size = size;
-            else
-                throw new("Invalid size");
+            for (int i = 3; i < words.Length; i++)
+            {
+                if (i == words.Length - 1)
+                    data.Append($"{words[i]}");
+                else
+                    data.Append($"{words[i]} ");
+            }
 
-            if (!validateSize(dataParsed.Size, dataParsed.Data))
-                throw new("Invalid set command");
-            return dataParsed;
+            return data.ToString();
         }
 
         public void Run()
@@ -151,11 +154,11 @@
                 try
                 {
                     line = sr.ReadLine();
-                    dataNode data = parseData(line, out commandType);
+                    DataNode data = parseData(line, out commandType);
+
                     if (commandType.CompareTo("get") == 0)
                     {
                         data = GetCacheKey(data.Key);
-                        Console.WriteLine(data.Key.ToString()); // todo
                         sw.WriteLine($"OK {data.Key}{Environment.NewLine}{data.Data}");
                     }
                     else if (commandType.CompareTo("set") == 0)
@@ -167,6 +170,7 @@
                 }
                 catch (Exception e)
                 {
+                    //sw.WriteLine(e.Message); display spacific error
                     sw.WriteLine("MISSING");
                 }
             } while (line != null);

@@ -1,14 +1,11 @@
-﻿using System;
-
-namespace CachingServer
+﻿namespace CachingServer
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
-            Server s = new Server();
-            s.Run();
-
+            Server cacheServer = new Server();
+            cacheServer.Run();
         }
     }
 }
