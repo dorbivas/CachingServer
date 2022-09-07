@@ -127,20 +127,26 @@
             while (true)
             {
                 TcpClient client = m_Server.AcceptTcpClient();
+                Console.WriteLine($"Client connected: {client.Client.RemoteEndPoint}");
+                //Task.Run(() => handleClient(client));
+
                 Task task = handleClient(client);
             }
         }
 
         private async Task handleClient(TcpClient client)
         {
-            await Task.Delay(millisecondsDelay: 500);
+            //await Task.Delay(millisecondsDelay: 500);
             NetworkStream stream = client.GetStream();
             StreamReader sr = new StreamReader(stream);
             StreamWriter sw = new StreamWriter(stream);
             string line = "", commandType;
-
+            
             sw.AutoFlush = true;
-
+            sw.WriteLine("Welcome to the server");
+            sw.WriteLine("Yout wish is my command");
+            sw.WriteLine($"The server is running on {m_IpAddress}:{r_Port}");
+            
             do
             {
                 try
@@ -152,20 +158,25 @@
                     {
                         data = GetCacheKey(data.Key);
                         sw.WriteLine($"OK {data.Size}{Environment.NewLine}{data.Data}");
+                        Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId}: get: {data.Key}");
+
                     }
                     else if (commandType.CompareTo("set") == 0)
                     {
                         SetCacheKey(data);
                         sw.WriteLine($"OK");
+                        Console.WriteLine($" {Thread.CurrentThread.ManagedThreadId}: set: {data.Key}");
                     }
 
                 }
                 catch (Exception e)
                 {
-                    //sw.WriteLine(e.Message); display spacific error
+                    sw.WriteLine(e.Message); //display spacific error
                     sw.WriteLine("MISSING");
                 }
             } while (line != null);
         }
     }
 }
+
+

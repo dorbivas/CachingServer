@@ -1,0 +1,17 @@
+client 1
+set email1 8 12345678
+set email2 20 11222222222222222222
+set email3 30 112662222222222222221111111111
+set email4 2 22
+set email5 5 12345
+
+client 2
+set email10 8 12345678
+get email1
+set email1 2 21
+get email1
+set email5 5 67891
+
+script for test run
+(make file and file1 with upper data)
+$ cat file | nc localhost 10011 & cat file1 | nc localhost 10011
